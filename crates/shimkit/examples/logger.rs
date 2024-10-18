@@ -30,9 +30,8 @@ async fn main(cmd: Command) {
 
             let server = serve(&address, Server).await.unwrap();
 
-            write!(pipe, "unix://{}", address.display()).unwrap();
+            writeln!(pipe, "unix://{}", address.display()).unwrap();
             drop(pipe);
-            println!();
 
             println!("Listening on {}", address.display());
             println!("Press Ctrl+C to exit.");
