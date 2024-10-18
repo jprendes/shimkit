@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/shimkit",
+    "crates/shimkit-macros",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/jprendes/shimkit"
+homepage = "https://github.com/jprendes/shimkit"
+
+[workspace.dependencies]
+shimkit = { path = "crates/shimkit", version = "0.1.0" }
+shimkit-macros = { path = "crates/shimkit-macros", version = "0.1.0" }
+
+[profile.release]
+opt-level = 3
+strip = "symbols"
+panic = "abort"

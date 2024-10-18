@@ -1,0 +1,30 @@
+[package]
+name = "shimkit"
+description = "Tools to build containerd shims"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+go-flag = "0.1.0"
+libc = "0.2"
+log = { version = "0.4", features = ["kv_unstable"] }
+oci-spec = "0.7"
+prost = "0.13"
+prost-types = "0.13"
+tokio = { version = "1", features = ["io-std", "process", "fs", "signal"] }
+trapeze = "0.7.0"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+trait-variant = "0.1"
+anyhow = "1"
+cfg-if = "1"
+shimkit-macros.workspace = true
+
+[build-dependencies]
+trapeze-codegen = "0.7.0"
+
+[dev-dependencies]
+tempfile = "3.6"
