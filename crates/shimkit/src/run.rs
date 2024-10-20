@@ -28,10 +28,8 @@ pub fn run<T: Termination>(f: impl FnOnce(Command) -> T) -> anyhow::Result<T> {
             // safe, since we piped stdout
             let mut output = child.stdout.take().unwrap();
 
-            println!("printing socket address!");
             copy(&mut output, &mut stdout())?;
             stdout().flush()?;
-            println!("[done]");
 
             exit(0);
         } else {
