@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::io::IsTerminal;
+use std::{collections::HashMap, io::stdout};
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::PathBuf;
@@ -126,6 +127,10 @@ impl Command {
 
         let action = rest.remove(0);
 
+        // If stdout is a terminal, we are running interactively.
+        // Skip the daemon launcher step.
+        let is_daemon = action == "daemon" || stdout().is_terminal();
+
         let args = Arguments {
             id,
             namespace,
@@ -133,7 +138,7 @@ impl Command {
             ttrpc_address,
             publish_binary,
             debug,
-            is_daemon: action == "daemon",
+            is_daemon,
             rest,
         };
 
