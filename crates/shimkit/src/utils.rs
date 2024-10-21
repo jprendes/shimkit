@@ -1,9 +1,11 @@
 use std::env::current_exe;
+use std::ffi::{OsStr, OsString};
 use std::hash::{DefaultHasher, Hash, Hasher as _};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use oci_spec::runtime::Spec;
+use os_str_bytes::OsStrBytesExt as _;
 use trapeze::{service, Server, ServerHandle};
 
 use crate::args::Arguments;
@@ -29,6 +31,16 @@ pub fn cri_sandbox_id() -> Option<String> {
     None
 }
 
+fn shim_name() -> OsString {
+    if let Some(name) = current_exe().unwrap_or_default().file_stem() {
+        name.strip_prefix("containerd-shim-")
+            .unwrap_or(&name)
+            .to_owned()
+    } else {
+        OsString::from("none")
+    }
+}
+
 impl Arguments {
     pub fn socket_address(&self, id: impl Hash) -> PathBuf {
         let id = {
@@ -37,16 +49,14 @@ impl Arguments {
             hasher.finish()
         };
 
-        let name = if let Some(name) = current_exe().unwrap_or_default().file_stem() {
-            let name = name.to_string_lossy();
-            name.strip_prefix("containerd-shim-")
-                .unwrap_or(&name)
-                .to_owned()
-        } else {
-            "anonymous".to_owned()
-        };
+        self.socker_address_debug(format!("{id:02x}"))
+    }
 
-        socket_address(&self.ttrpc_address, format!("{name}-{id:02x}"))
+    pub fn socker_address_debug(&self, stem: impl AsRef<OsStr>) -> PathBuf {
+        let mut name = shim_name();
+        name.push("-");
+        name.push(stem.as_ref());
+        socket_address(&self.ttrpc_address, name)
     }
 }
 

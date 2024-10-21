@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::io::{IsTerminal as _, Write};
 use std::path::PathBuf;
 
 use shimkit::args::Command;
@@ -23,14 +23,24 @@ async fn main(cmd: Command) {
             println!();
         }
         Command::Start { mut pipe, args } => {
-            let id = cri_sandbox_id().unwrap_or_else(|| args.id.clone());
-            let address = args.socket_address(id);
+            let address = if pipe.is_terminal() {
+                println!("Running logger interactively, a debug address will be used");
+                args.socker_address_debug("debug")
+            } else {
+                let id = cri_sandbox_id().unwrap_or_else(|| args.id.clone());
+                args.socket_address(id)
+            };
+
             #[cfg(unix)]
             let _ = tokio::fs::remove_file(&address).await;
 
             let server = serve(&address, Server).await.unwrap();
 
-            writeln!(pipe, "unix://{}", address.display()).unwrap();
+            #[cfg(unix)]
+            write!(pipe, "unix://").unwrap();
+
+            writeln!(pipe, "{}", address.display()).unwrap();
+
             drop(pipe);
 
             println!("Listening on {}", address.display());
