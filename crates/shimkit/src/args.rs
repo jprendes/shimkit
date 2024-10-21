@@ -1,17 +1,16 @@
 use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::fs::File;
 use std::io::{stdout, IsTerminal};
 use std::path::PathBuf;
 
 use anyhow::{bail, ensure, Result};
 
-use crate::fd::clone_stdout;
+use crate::run::AddressPipe;
 use crate::sys::CONTAINERD_DEFAULT_ADDRESS;
 
 #[derive(Debug)]
 pub enum Command {
-    Start { pipe: File, args: Arguments },
+    Start { pipe: AddressPipe, args: Arguments },
     Delete { bundle: PathBuf, args: Arguments },
     Version,
 }
@@ -145,7 +144,7 @@ impl Command {
 
         let action = match action.as_str() {
             "start" | "daemon" => Command::Start {
-                pipe: clone_stdout(),
+                pipe: AddressPipe::from_stdout(),
                 args,
             },
             "delete" => Command::Delete { bundle, args },

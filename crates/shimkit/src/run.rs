@@ -1,12 +1,38 @@
 use std::env::{current_dir, current_exe};
-use std::io::{copy, stderr, stdout, IsTerminal, Write as _};
+use std::fs::File;
+use std::io::{copy, stderr, stdout, IsTerminal as _, Result as IoResult, Write as _};
+use std::path::Path;
 use std::process::{exit, Command as ProcessCmd, Stdio, Termination};
 
 use anyhow::Context;
 
 use crate::args::Command;
-use crate::fd::{clone_stderr, FdRedirect as _};
+use crate::fd::{clone_stderr, clone_stdout, FdRedirect as _};
 use crate::fs::{open_append, open_dev_null};
+
+#[derive(Debug)]
+pub struct AddressPipe(File);
+
+impl AddressPipe {
+    pub(crate) fn from_file(file: File) -> Self {
+        Self(file)
+    }
+
+    pub(crate) fn from_stdout() -> Self {
+        Self::from_file(clone_stdout())
+    }
+
+    pub fn write_address(mut self, address: impl AsRef<Path>) -> IoResult<()> {
+        #[cfg(unix)]
+        write!(self.0, "unix://")?;
+        writeln!(self.0, "{}", address.as_ref().display())?;
+        Ok(())
+    }
+
+    pub fn is_terminal(&self) -> bool {
+        self.0.is_terminal()
+    }
+}
 
 /// Shim entry point that must be invoked from `main`.
 pub fn run<T: Termination>(f: impl FnOnce(Command) -> T) -> anyhow::Result<T> {

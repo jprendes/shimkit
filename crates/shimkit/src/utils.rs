@@ -49,10 +49,10 @@ impl Arguments {
             hasher.finish()
         };
 
-        self.socker_address_debug(format!("{id:02x}"))
+        self.socket_address_debug(format!("{id:02x}"))
     }
 
-    pub fn socker_address_debug(&self, stem: impl AsRef<OsStr>) -> PathBuf {
+    pub fn socket_address_debug(&self, stem: impl AsRef<OsStr>) -> PathBuf {
         let mut name = shim_name();
         name.push("-");
         name.push(stem.as_ref());
