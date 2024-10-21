@@ -34,7 +34,7 @@ pub fn cri_sandbox_id() -> Option<String> {
 fn shim_name() -> OsString {
     if let Some(name) = current_exe().unwrap_or_default().file_stem() {
         name.strip_prefix("containerd-shim-")
-            .unwrap_or(&name)
+            .unwrap_or(name)
             .to_owned()
     } else {
         OsString::from("none")

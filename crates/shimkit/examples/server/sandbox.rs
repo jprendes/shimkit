@@ -1,21 +1,22 @@
 use shimkit::protos::containerd::runtime::sandbox::v1::*;
 use shimkit::protos::runtime::v1::PodSandboxConfig;
-use trapeze::{Code, Result, Status, StatusExt};
+use trapeze::{Result, Status};
 
 use super::Server;
 
 impl Sandbox for Server {
-    async fn create_sandbox(&self, r: CreateSandboxRequest) -> Result<CreateSandboxResponse> {
-        println!("{r:#?}");
-        if let Some(mut options) = r.options {
-            if options.type_url == "runtime.v1.PodSandboxConfig" {
-                options.type_url = "/runtime.v1.PodSandboxConfig".into();
-                let options = options
-                    .to_msg::<PodSandboxConfig>()
-                    .or_status(Code::InvalidArgument)?;
-                println!("{options:#?}");
+    async fn create_sandbox(&self, mut r: CreateSandboxRequest) -> Result<CreateSandboxResponse> {
+        let options = r.options.take().and_then(|mut options| {
+            if !options.type_url.ends_with("runtime.v1.PodSandboxConfig") {
+                return None;
             }
-        }
+            // Someone somewhere is not adding the required slash to the type_url
+            // Workaround it by setting it manually
+            options.type_url = "/runtime.v1.PodSandboxConfig".into();
+            options.to_msg::<PodSandboxConfig>().ok()
+        });
+        println!("{r:#?}");
+        options.inspect(|opts| println!("{opts:#?}"));
         Err(Status::not_found(
             "/containerd.runtime.sandbox.v1.Sandbox/CreateSandbox is not supported",
         ))
