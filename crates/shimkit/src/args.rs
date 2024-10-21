@@ -1,12 +1,13 @@
-use std::io::IsTerminal;
-use std::{collections::HashMap, io::stdout};
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs::File;
+use std::io::{stdout, IsTerminal};
 use std::path::PathBuf;
 
 use anyhow::{bail, ensure, Result};
 
-use crate::{fd::clone_stdout, sys::CONTAINERD_DEFAULT_ADDRESS};
+use crate::fd::clone_stdout;
+use crate::sys::CONTAINERD_DEFAULT_ADDRESS;
 
 #[derive(Debug)]
 pub enum Command {

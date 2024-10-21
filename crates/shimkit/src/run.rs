@@ -6,7 +6,7 @@ use anyhow::Context;
 
 use crate::args::Command;
 use crate::fd::{clone_stderr, FdRedirect as _};
-use crate::fs::{open_dev_null, open_append};
+use crate::fs::{open_append, open_dev_null};
 
 /// Shim entry point that must be invoked from `main`.
 pub fn run<T: Termination>(f: impl FnOnce(Command) -> T) -> anyhow::Result<T> {

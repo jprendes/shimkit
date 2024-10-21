@@ -40,6 +40,7 @@ fn main() {
                 "protos/github.com/containerd/containerd/api/services/ttrpc/events/v1/events.proto",
                 "protos/github.com/containerd/containerd/api/types/platform.proto",
                 "protos/github.com/containerd/containerd/api/runtime/sandbox/v1/sandbox.proto",
+                "protos/k8s.io/cri-api/pkg/apis/runtime/v1/api.proto",
             ],
             &["protos/"],
         )

@@ -1,11 +1,21 @@
 use shimkit::protos::containerd::runtime::sandbox::v1::*;
-use trapeze::{Result, Status};
+use shimkit::protos::runtime::v1::PodSandboxConfig;
+use trapeze::{Code, Result, Status, StatusExt};
 
 use super::Server;
 
 impl Sandbox for Server {
     async fn create_sandbox(&self, r: CreateSandboxRequest) -> Result<CreateSandboxResponse> {
         println!("{r:#?}");
+        if let Some(mut options) = r.options {
+            if options.type_url == "runtime.v1.PodSandboxConfig" {
+                options.type_url = "/runtime.v1.PodSandboxConfig".into();
+                let options = options
+                    .to_msg::<PodSandboxConfig>()
+                    .or_status(Code::InvalidArgument)?;
+                println!("{options:#?}");
+            }
+        }
         Err(Status::not_found(
             "/containerd.runtime.sandbox.v1.Sandbox/CreateSandbox is not supported",
         ))
