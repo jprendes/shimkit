@@ -1,4 +1,5 @@
 pub mod args;
+pub mod event;
 pub mod protos;
 pub mod run;
 pub mod utils;
