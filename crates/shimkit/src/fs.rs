@@ -4,14 +4,21 @@ use std::path::Path;
 
 use crate::sys::DEV_NULL;
 
-pub fn open_append(path: impl AsRef<Path>) -> Result<File> {
-    File::options()
-        .create(false)
-        .read(false)
-        .append(true)
-        .open(path)
+pub trait FileEx: Sized {
+    fn append(path: impl AsRef<Path>) -> Result<Self>;
+    fn dev_null() -> Result<Self>;
 }
 
-pub fn open_dev_null() -> Result<File> {
-    open_append(DEV_NULL)
+impl FileEx for File {
+    fn append(path: impl AsRef<Path>) -> Result<Self> {
+        File::options()
+            .create(false)
+            .read(false)
+            .append(true)
+            .open(path)
+    }
+
+    fn dev_null() -> Result<Self> {
+        Self::append(DEV_NULL)
+    }
 }

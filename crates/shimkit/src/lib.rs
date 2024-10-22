@@ -7,7 +7,7 @@ pub mod utils;
 #[cfg_attr(windows, path = "sys/windows/mod.rs")]
 mod sys;
 
-mod fd;
 mod fs;
+mod stdio;
 
 pub use shimkit_macros::main;

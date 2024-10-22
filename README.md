@@ -15,7 +15,7 @@ Library for writing containerd shims
     ```bash
     cat <<EOF | sudo tee /usr/local/bin/containerd-shim-logger-v1 > /dev/null
     #!/bin/bash
-    echo unix:///run/containerd/containerd-shim-logger-debug.sock
+    echo unix:///run/containerd/containerd-shim-logger-debug.sock.ttrpc
     EOF
     sudo chmod a+x /usr/local/bin/containerd-shim-logger-v1
     ```

@@ -7,8 +7,8 @@ use std::process::{exit, Command as ProcessCmd, Stdio, Termination};
 use anyhow::Context;
 
 use crate::args::Command;
-use crate::fd::{clone_stderr, clone_stdout, FdRedirect as _};
-use crate::fs::{open_append, open_dev_null};
+use crate::fs::FileEx as _;
+use crate::stdio::FdRedirect as _;
 
 #[derive(Debug)]
 pub struct AddressPipe(File);
@@ -19,7 +19,7 @@ impl AddressPipe {
     }
 
     pub(crate) fn from_stdout() -> Self {
-        Self::from_file(clone_stdout())
+        Self::from_file(File::stdout())
     }
 
     pub fn write_address(mut self, address: impl AsRef<Path>) -> IoResult<()> {
@@ -60,12 +60,12 @@ pub fn run<T: Termination>(f: impl FnOnce(Command) -> T) -> anyhow::Result<T> {
             exit(0);
         } else {
             // Redirect stdout and stderr to the logs file.
-            let log = if let Ok(file) = open_append("log") {
+            let log = if let Ok(file) = File::append("log") {
                 file
             } else if stderr().is_terminal() {
-                clone_stderr()
+                File::stderr()
             } else {
-                open_dev_null().context("failed to allocate a sink for stdout")?
+                File::dev_null().context("failed to allocate a sink for stdout")?
             };
 
             log.use_as_stdout();

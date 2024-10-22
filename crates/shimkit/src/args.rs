@@ -275,7 +275,7 @@ mod tests {
     #[test]
     fn socket_address_with_ext() {
         let args = Arguments {
-            ttrpc_address: "/path/to/containerd.socket.ttrpc".into(),
+            ttrpc_address: "/path/to/containerd.sock.ttrpc".into(),
             shim_name: "logger".into(),
             ..Default::default()
         };
@@ -284,7 +284,7 @@ mod tests {
 
         assert_eq!(
             socket,
-            PathBuf::from("/path/to/containerd-shim-logger-123.socket.ttrpc")
+            PathBuf::from("/path/to/containerd-shim-logger-123.sock.ttrpc")
         );
     }
 
@@ -298,9 +298,6 @@ mod tests {
 
         let socket = args.socket_address_debug("123");
 
-        assert_eq!(
-            socket,
-            PathBuf::from("/path/to/containerd-shim-logger-123")
-        );
+        assert_eq!(socket, PathBuf::from("/path/to/containerd-shim-logger-123"));
     }
 }
