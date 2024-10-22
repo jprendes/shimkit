@@ -1,9 +1,12 @@
 use std::collections::HashMap;
-use std::ffi::OsStr;
+use std::env::current_exe;
+use std::ffi::{OsStr, OsString};
+use std::hash::{DefaultHasher, Hash, Hasher as _};
 use std::io::{stdout, IsTerminal};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, ensure, Result};
+use os_str_bytes::OsStrBytesExt as _;
 
 use crate::run::AddressPipe;
 use crate::sys::CONTAINERD_DEFAULT_ADDRESS;
@@ -15,6 +18,7 @@ pub enum Command {
     Version,
 }
 
+#[derive(Default, Clone)]
 pub struct Arguments {
     // the id of the container
     pub id: String,
@@ -35,8 +39,8 @@ pub struct Arguments {
     pub debug: bool,
 
     pub(crate) is_daemon: bool,
-
     pub(crate) rest: Vec<String>,
+    pub(crate) shim_name: OsString,
 }
 
 impl std::fmt::Debug for Arguments {
@@ -70,6 +74,49 @@ impl Arguments {
         args.push(command.as_ref());
         args.extend(self.rest.iter().map(AsRef::<OsStr>::as_ref));
         args
+    }
+}
+
+fn shim_name() -> OsString {
+    if let Some(name) = current_exe().unwrap_or_default().file_stem() {
+        name.strip_prefix("containerd-shim-")
+            .unwrap_or(name)
+            .to_owned()
+    } else {
+        OsString::from("unknown")
+    }
+}
+
+fn socket_address(containerd_socket: impl AsRef<Path>, id: impl AsRef<OsStr>) -> PathBuf {
+    let containerd_socket = containerd_socket.as_ref();
+    let (_, extension) = containerd_socket
+        .file_name()
+        .unwrap_or_default()
+        .split_once(".")
+        .unwrap_or_default();
+    let mut name = OsString::from("containerd-shim-");
+    name.push(id);
+    containerd_socket
+        .with_file_name(name)
+        .with_extension(extension)
+}
+
+impl Arguments {
+    pub fn socket_address(&self, id: impl Hash) -> PathBuf {
+        let id = {
+            let mut hasher = DefaultHasher::new();
+            (&self.namespace, id).hash(&mut hasher);
+            hasher.finish()
+        };
+
+        self.socket_address_debug(format!("{id:02x}"))
+    }
+
+    pub fn socket_address_debug(&self, stem: impl AsRef<OsStr>) -> PathBuf {
+        let mut name = self.shim_name.clone();
+        name.push("-");
+        name.push(stem.as_ref());
+        socket_address(&self.ttrpc_address, name)
     }
 }
 
@@ -131,6 +178,8 @@ impl Command {
         // Skip the daemon launcher step.
         let is_daemon = action == "daemon" || stdout().is_terminal();
 
+        let shim_name = shim_name();
+
         let args = Arguments {
             id,
             namespace,
@@ -140,6 +189,7 @@ impl Command {
             debug,
             is_daemon,
             rest,
+            shim_name,
         };
 
         let action = match action.as_str() {
@@ -159,7 +209,7 @@ impl Command {
 mod tests {
     use std::path::Path;
 
-    use super::Command;
+    use super::*;
 
     #[test]
     fn parse_all() {
@@ -176,13 +226,15 @@ mod tests {
             "-address",
             "address",
             "delete",
+            "abc",
+            "def",
         ];
 
         let envs = [("TTRPC_ADDRESS", "/path/to/c8d.sock")];
 
-        let action = Command::parse_from(args, envs).unwrap();
+        let command = Command::parse_from(args, envs).unwrap();
 
-        let Command::Delete { bundle, args } = action else {
+        let Command::Delete { bundle, args } = command else {
             panic!("Wrong action");
         };
         assert!(args.debug);
@@ -190,19 +242,16 @@ mod tests {
         assert_eq!(args.namespace, "default");
         assert_eq!(args.publish_binary, Path::new("/path/to/binary"));
         assert_eq!(args.grpc_address, "address");
-        assert_eq!(args.ttrpc_address, "address.ttrpc");
+        assert_eq!(args.ttrpc_address, "/path/to/c8d.sock");
         assert_eq!(bundle, Path::new("bundle"));
     }
 
     #[test]
     fn parse_flags() {
         let args = ["-id", "123", "-namespace", "default", "start"];
+        let command = Command::parse_from(args, [] as [(&str, &str); 0]).unwrap();
 
-        let envs = [("TTRPC_ADDRESS", "/path/to/c8d.sock")];
-
-        let action = Command::parse_from(args, envs).unwrap();
-
-        let Command::Start { args, .. } = action else {
+        let Command::Start { args, .. } = command else {
             panic!("Wrong action");
         };
 
@@ -221,5 +270,37 @@ mod tests {
         let Command::Version = action else {
             panic!("Wrong action");
         };
+    }
+
+    #[test]
+    fn socket_address_with_ext() {
+        let args = Arguments {
+            ttrpc_address: "/path/to/containerd.socket.ttrpc".into(),
+            shim_name: "logger".into(),
+            ..Default::default()
+        };
+
+        let socket = args.socket_address_debug("123");
+
+        assert_eq!(
+            socket,
+            PathBuf::from("/path/to/containerd-shim-logger-123.socket.ttrpc")
+        );
+    }
+
+    #[test]
+    fn socket_address_without_ext() {
+        let args = Arguments {
+            ttrpc_address: "/path/to/containerd-containerd".into(),
+            shim_name: "logger".into(),
+            ..Default::default()
+        };
+
+        let socket = args.socket_address_debug("123");
+
+        assert_eq!(
+            socket,
+            PathBuf::from("/path/to/containerd-shim-logger-123")
+        );
     }
 }
