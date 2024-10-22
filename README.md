@@ -73,9 +73,8 @@ metadata:
   namespace: default
   uid: abc123
 EOF
-sudo crictl \
-    --runtime-endpoint=unix:///run/containerd/containerd.sock runp \
-    --runtime=logger \
+sudo crictl --runtime-endpoint=unix:///run/containerd/containerd.sock \
+    runp --runtime=logger \
     /tmp/pod-config.yaml
 ```
 

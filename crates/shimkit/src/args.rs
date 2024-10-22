@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use std::env::current_exe;
 use std::ffi::{OsStr, OsString};
 use std::hash::{DefaultHasher, Hash, Hasher as _};
-use std::io::{stdout, IsTerminal};
+use std::io::{stdout, IsTerminal, Result as IoResult};
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, ensure, Result};
 use os_str_bytes::OsStrBytesExt as _;
 
+use crate::event::EventPublisher;
 use crate::run::AddressPipe;
 use crate::sys::CONTAINERD_DEFAULT_ADDRESS;
 
@@ -117,6 +118,10 @@ impl Arguments {
         name.push("-");
         name.push(stem.as_ref());
         socket_address(&self.ttrpc_address, name)
+    }
+
+    pub async fn event_publisher(&self) -> IoResult<EventPublisher> {
+        EventPublisher::connect(&self.ttrpc_address, &self.namespace).await
     }
 }
 
