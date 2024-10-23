@@ -199,7 +199,7 @@ impl Command {
 
         let action = match action.as_str() {
             "start" | "daemon" => Command::Start {
-                pipe: AddressPipe::from_stdout(),
+                pipe: AddressPipe::from_stdout()?,
                 args,
             },
             "delete" => Command::Delete { bundle, args },

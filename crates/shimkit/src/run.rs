@@ -7,8 +7,8 @@ use std::process::{exit, Command as ProcessCmd, Stdio, Termination};
 use anyhow::Context;
 
 use crate::args::Command;
-use crate::fs::FileEx as _;
-use crate::stdio::FdRedirect as _;
+use crate::fs::{dev_null, FileEx as _};
+use crate::stdio::Duplicate as _;
 
 #[derive(Debug)]
 pub struct AddressPipe(File);
@@ -18,8 +18,8 @@ impl AddressPipe {
         Self(file)
     }
 
-    pub(crate) fn from_stdout() -> Self {
-        Self::from_file(File::stdout())
+    pub(crate) fn from_stdout() -> IoResult<Self> {
+        Ok(Self::from_file(stdout().duplicate()?.into()))
     }
 
     pub fn write_address(mut self, address: impl AsRef<Path>) -> IoResult<()> {
@@ -34,12 +34,30 @@ impl AddressPipe {
     }
 }
 
+fn open_log() -> IoResult<File> {
+    // try with the log file
+    if let Ok(file) = File::append("log") {
+        return Ok(file);
+    }
+    // if we are running interactively, try with stderr
+    if stderr().is_terminal() {
+        if let Ok(file) = stderr().duplicate() {
+            return Ok(file.into());
+        }
+    }
+    // try with a null sink
+    dev_null()
+}
+
 /// Shim entry point that must be invoked from `main`.
 pub fn run<T: Termination>(f: impl FnOnce(Command) -> T) -> anyhow::Result<T> {
     let action = Command::parse_env()?;
 
     if let Command::Start { args, .. } = &action {
         if !args.is_daemon {
+            // This is not the daemon, but rather it's the daemon launcher
+            // Re-spawn itself as a daemon
+
             let cmd = current_exe()?;
             let cwd = current_dir()?;
 
@@ -59,17 +77,12 @@ pub fn run<T: Termination>(f: impl FnOnce(Command) -> T) -> anyhow::Result<T> {
 
             exit(0);
         } else {
-            // Redirect stdout and stderr to the logs file.
-            let log = if let Ok(file) = File::append("log") {
-                file
-            } else if stderr().is_terminal() {
-                File::stderr()
-            } else {
-                File::dev_null().context("failed to allocate a sink for stdout")?
-            };
+            // This is the daemon
 
-            log.use_as_stdout();
-            log.use_as_stderr();
+            // Before handing over control to user code, redirect stdout/stderr
+            let log = open_log().context("failed to allocate a sink for stdout")?;
+            log.duplicate_to_stdout()?;
+            log.duplicate_to_stderr()?;
         }
     }
 

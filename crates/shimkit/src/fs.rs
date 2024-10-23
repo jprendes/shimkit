@@ -6,7 +6,6 @@ use crate::sys::DEV_NULL;
 
 pub trait FileEx: Sized {
     fn append(path: impl AsRef<Path>) -> Result<Self>;
-    fn dev_null() -> Result<Self>;
 }
 
 impl FileEx for File {
@@ -17,8 +16,8 @@ impl FileEx for File {
             .append(true)
             .open(path)
     }
+}
 
-    fn dev_null() -> Result<Self> {
-        Self::append(DEV_NULL)
-    }
+pub fn dev_null() -> Result<File> {
+    File::append(DEV_NULL)
 }

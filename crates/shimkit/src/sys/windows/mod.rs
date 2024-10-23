@@ -1,4 +1,4 @@
-pub mod fd;
+pub mod stdio;
 
 pub const DEV_NULL: &str = "nul";
 
