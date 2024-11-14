@@ -1,7 +1,7 @@
+use anyhow::Result;
 use shimkit::args::Arguments;
 use shimkit::utils::cri_sandbox_id;
 use tokio::signal::ctrl_c;
-use anyhow::Result;
 
 mod server;
 use server::Server;
@@ -21,9 +21,9 @@ async fn main(args: Arguments) -> Result<()> {
     #[cfg(unix)]
     let _ = tokio::fs::remove_file(&address).await;
 
-    let _events = args.event_publisher().await?;
-
-    let server = args.serve(&address, Server).await?;
+    let _publisher = args.event_publisher().await?;
+    let server = Server { _publisher };
+    let server = args.serve(&address, server).await?;
 
     log::info!("Listening on {}", address.display());
     log::info!("Press Ctrl+C to exit.");

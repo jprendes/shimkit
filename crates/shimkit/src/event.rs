@@ -51,7 +51,7 @@ impl EventPublisher {
         Self::new(NullEvents)
     }
 
-    pub(crate) fn new(events: impl Events + Send + Sync) -> Self {
+    pub(crate) fn new(events: impl Events) -> Self {
         Self {
             events: Arc::new(events),
             namespace: "".into(),
@@ -171,7 +171,12 @@ mod tests {
         };
         publisher.publish(msg).await.unwrap();
 
-        let Envelope { topic, event, namespace,.. } = rx.recv().await.unwrap();
+        let Envelope {
+            topic,
+            event,
+            namespace,
+            ..
+        } = rx.recv().await.unwrap();
         assert_eq!(topic, "/tasks/oom");
         assert_eq!(namespace, "ns1");
         assert_eq!(
