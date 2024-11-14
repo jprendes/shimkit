@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/shimkit",
+    "crates/shimkit-types",
     "crates/shimkit-macros",
 ]
 
@@ -15,6 +16,7 @@ homepage = "https://github.com/jprendes/shimkit"
 
 [workspace.dependencies]
 shimkit = { path = "crates/shimkit", version = "0.1.0" }
+shimkit-types = { path = "crates/shimkit-types", version = "0.1.0" }
 shimkit-macros = { path = "crates/shimkit-macros", version = "0.1.0" }
 
 [profile.release]

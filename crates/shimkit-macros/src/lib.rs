@@ -60,7 +60,7 @@ fn main_impl(args: TokenStream, input: TokenStream) -> syn::Result<TokenStream> 
     } else {
         quote! {
             fn main() -> impl ::std::process::Termination {
-                fn inner_main(cmd: #shimkit_path::args::Command) -> impl ::std::process::Termination {
+                fn inner_main(cmd: #shimkit_path::args::Arguments) -> impl ::std::process::Termination {
                     #input
                     #tokio_path::runtime::Builder::#flavor()
                         #worker_threads

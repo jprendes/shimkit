@@ -1,25 +1,25 @@
 use std::collections::HashMap;
 use std::env::current_exe;
 use std::ffi::{OsStr, OsString};
+use std::fs::File;
 use std::hash::{DefaultHasher, Hash, Hasher as _};
-use std::io::{stdout, IsTerminal, Result as IoResult};
+use std::io::{stdout, IsTerminal, Result as IoResult, Write};
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, ensure, Result};
+use anyhow::{bail, ensure, Context as _, Result};
 use os_str_bytes::OsStrBytesExt as _;
+use prost::Message;
+use shimkit_types::task::KeyValue;
+use trapeze::{service, Server, ServerHandle};
 
 use crate::event::EventPublisher;
-use crate::run::AddressPipe;
+use crate::fs::dev_null;
+use crate::stdio::Duplicate as _;
 use crate::sys::CONTAINERD_DEFAULT_ADDRESS;
+use crate::types::sandbox::Sandbox;
+use crate::types::task::{CleanupRequest, Task};
+use crate::utils::ToLossyString;
 
-#[derive(Debug)]
-pub enum Command {
-    Start { pipe: AddressPipe, args: Arguments },
-    Delete { bundle: PathBuf, args: Arguments },
-    Version,
-}
-
-#[derive(Default, Clone)]
 pub struct Arguments {
     // the id of the container
     pub id: String,
@@ -39,9 +39,11 @@ pub struct Arguments {
     // enable debug output in logs
     pub debug: bool,
 
-    pub(crate) is_daemon: bool,
+    pub(crate) action: String,
     pub(crate) rest: Vec<String>,
+    pub(crate) bundle: PathBuf,
     pub(crate) shim_name: OsString,
+    pub(crate) stdout: File,
 }
 
 impl std::fmt::Debug for Arguments {
@@ -57,8 +59,26 @@ impl std::fmt::Debug for Arguments {
     }
 }
 
+impl Default for Arguments {
+    fn default() -> Self {
+        Self {
+            id: Default::default(),
+            namespace: Default::default(),
+            ttrpc_address: Default::default(),
+            grpc_address: Default::default(),
+            publish_binary: Default::default(),
+            debug: Default::default(),
+            action: Default::default(),
+            rest: Default::default(),
+            bundle: Default::default(),
+            shim_name: Default::default(),
+            stdout: dev_null().unwrap(),
+        }
+    }
+}
+
 impl Arguments {
-    pub(crate) fn to_args_vec(&self, command: &'static OsStr) -> Vec<&OsStr> {
+    pub(crate) fn to_args_vec(&self, action: &'static OsStr) -> Vec<&OsStr> {
         let mut args: Vec<&OsStr> = vec![
             "-id".as_ref(),
             self.id.as_ref(),
@@ -72,9 +92,58 @@ impl Arguments {
         if self.debug {
             args.push("-debug".as_ref());
         }
-        args.push(command.as_ref());
+        args.push(action.as_ref());
         args.extend(self.rest.iter().map(AsRef::<OsStr>::as_ref));
         args
+    }
+
+    pub fn is_interactive(&self) -> bool {
+        self.stdout.is_terminal()
+    }
+
+    pub async fn serve(
+        self,
+        address: impl AsRef<Path>,
+        server: impl Sandbox + Task,
+    ) -> Result<ServerHandle> {
+        match self.action.as_str() {
+            "version" => {
+                let mut stdout = self.stdout;
+                let result = server.version(()).await?;
+                writeln!(stdout, "{}:", result.executable)?;
+                for KeyValue { key, value } in result.info {
+                    writeln!(stdout, "  {key}: {value}")?;
+                }
+                Ok(ServerHandle::new())
+            }
+            "delete" => {
+                let mut stdout = self.stdout;
+                let req = CleanupRequest {
+                    bundle: self.bundle.to_lossy_string(),
+                };
+                let result = server.cleanup(req).await?.encode_to_vec();
+                stdout.write_all(&result)?;
+                Ok(ServerHandle::new())
+            }
+            "daemon" => {
+                let address = address.as_ref().display().to_string();
+
+                #[cfg(unix)]
+                let address = format!("unix://{address}");
+
+                let mut stdout = self.stdout;
+                writeln!(stdout, "{}", address)?;
+
+                let handle = Server::new()
+                    .register(service!(server : Sandbox + Task))
+                    .bind(&address)
+                    .await
+                    .context("Error binding listener")?;
+
+                Ok(handle)
+            }
+            action => bail!("Unsupported action `{action}`"),
+        }
     }
 }
 
@@ -121,12 +190,17 @@ impl Arguments {
     }
 
     pub async fn event_publisher(&self) -> IoResult<EventPublisher> {
-        EventPublisher::connect(&self.ttrpc_address, &self.namespace).await
+        let publisher = match self.action.as_str() {
+            "daemon" => EventPublisher::connect(&self.ttrpc_address).await?,
+            _ => EventPublisher::null(),
+        };
+        let publisher = publisher.with_namespace(&self.namespace);
+        Ok(publisher)
     }
 }
 
-impl Command {
-    pub fn parse_env() -> Result<Command> {
+impl Arguments {
+    pub fn parse_env() -> Result<Arguments> {
         Self::parse_from(std::env::args().skip(1), std::env::vars())
     }
 
@@ -134,7 +208,7 @@ impl Command {
     pub fn parse_from(
         args: impl IntoIterator<Item = impl Into<String>>,
         vars: impl IntoIterator<Item = (impl Into<String>, impl Into<String>)>,
-    ) -> Result<Command> {
+    ) -> Result<Arguments> {
         let vars: HashMap<String, String> = vars
             .into_iter()
             .map(|(k, v)| (k.into(), v.into()))
@@ -172,18 +246,25 @@ impl Command {
             .unwrap_or_else(|| format!("{grpc_address}.ttrpc"));
 
         if version {
-            return Ok(Command::Version);
+            return Ok(Arguments {
+                action: "version".into(),
+                stdout: stdout().duplicate()?.into(),
+                ..Default::default()
+            });
         }
 
         ensure!(!rest.is_empty(), "No action specified");
 
-        let action = rest.remove(0);
+        let mut action = rest.remove(0);
 
         // If stdout is a terminal, we are running interactively.
         // Skip the daemon launcher step.
-        let is_daemon = action == "daemon" || stdout().is_terminal();
+        if action == "start" && stdout().is_terminal() {
+            action = "daemon".into();
+        }
 
         let shim_name = shim_name();
+        let stdout = stdout().duplicate()?.into();
 
         let args = Arguments {
             id,
@@ -192,21 +273,17 @@ impl Command {
             ttrpc_address,
             publish_binary,
             debug,
-            is_daemon,
+            action,
             rest,
+            bundle,
             shim_name,
+            stdout,
         };
 
-        let action = match action.as_str() {
-            "start" | "daemon" => Command::Start {
-                pipe: AddressPipe::from_stdout()?,
-                args,
-            },
-            "delete" => Command::Delete { bundle, args },
-            _ => bail!("Unsupported action `{action}`"),
-        };
-
-        Ok(action)
+        match args.action.as_str() {
+            "start" | "daemon" | "delete" => Ok(args),
+            action => bail!("Unsupported action `{action}`"),
+        }
     }
 }
 
@@ -237,28 +314,22 @@ mod tests {
 
         let envs = [("TTRPC_ADDRESS", "/path/to/c8d.sock")];
 
-        let command = Command::parse_from(args, envs).unwrap();
+        let args = Arguments::parse_from(args, envs).unwrap();
 
-        let Command::Delete { bundle, args } = command else {
-            panic!("Wrong action");
-        };
+        assert_eq!(args.action, "delete");
         assert!(args.debug);
         assert_eq!(args.id, "123");
         assert_eq!(args.namespace, "default");
         assert_eq!(args.publish_binary, Path::new("/path/to/binary"));
         assert_eq!(args.grpc_address, "address");
         assert_eq!(args.ttrpc_address, "/path/to/c8d.sock");
-        assert_eq!(bundle, Path::new("bundle"));
+        assert_eq!(args.bundle, Path::new("bundle"));
     }
 
     #[test]
     fn parse_flags() {
         let args = ["-id", "123", "-namespace", "default", "start"];
-        let command = Command::parse_from(args, [] as [(&str, &str); 0]).unwrap();
-
-        let Command::Start { args, .. } = command else {
-            panic!("Wrong action");
-        };
+        let args = Arguments::parse_from(args, [] as [(&str, &str); 0]).unwrap();
 
         assert!(!args.debug);
         assert_eq!(args.id, "123");
@@ -270,11 +341,9 @@ mod tests {
         let args = ["-v"];
         let envs: [(&str, &str); 0] = [];
 
-        let action = Command::parse_from(args, envs).unwrap();
+        let args = Arguments::parse_from(args, envs).unwrap();
 
-        let Command::Version = action else {
-            panic!("Wrong action");
-        };
+        assert_eq!(args.action, "version");
     }
 
     #[test]

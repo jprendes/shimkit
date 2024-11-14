@@ -48,6 +48,23 @@ service Task {
 	rpc Stats(StatsRequest) returns (StatsResponse);
 	rpc Connect(ConnectRequest) returns (ConnectResponse);
 	rpc Shutdown(ShutdownRequest) returns (google.protobuf.Empty);
+
+	rpc Cleanup(CleanupRequest) returns (DeleteResponse);
+	rpc Version(google.protobuf.Empty) returns (VersionResponse);
+}
+
+message CleanupRequest {
+	string bundle = 1;
+}
+
+message VersionResponse {
+	string executable = 1;
+	repeated KeyValue info = 2;
+}
+
+message KeyValue {
+    string key = 1;
+    string value = 2;
 }
 
 message CreateTaskRequest {

@@ -1,6 +1,6 @@
 [package]
-name = "shimkit"
-description = "Tools to build containerd shims"
+name = "shimkit-types"
+description = "Types for shimkit"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
@@ -9,23 +9,9 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-async-trait = "0.1"
-go-flag = "0.1.0"
-libc = "0.2"
-log = { version = "0.4", features = ["kv_unstable"] }
-oci-spec = "0.7"
 prost = "0.13"
 prost-types = "0.13"
-tokio = { version = "1", features = ["io-std", "process", "fs", "signal"] }
 trapeze = { version = "0.7.1", path = "/home/jprendes/Projects/trapeze/crates/trapeze" }
-anyhow = "1"
-os_str_bytes = "7"
-shimkit-macros.workspace = true
-shimkit-types.workspace = true
 
 [build-dependencies]
 trapeze-codegen = { version = "0.7.0", path = "/home/jprendes/Projects/trapeze/crates/trapeze-codegen" }
-
-[dev-dependencies]
-tempfile = "3"
-env_logger = "0.11"

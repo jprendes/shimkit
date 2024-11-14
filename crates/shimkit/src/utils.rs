@@ -1,13 +1,8 @@
-use std::path::Path;
+use std::ffi::OsStr;
 
-use anyhow::{Context, Result};
 use oci_spec::runtime::Spec;
-use trapeze::{service, Server, ServerHandle};
 
-use crate::protos::containerd::runtime::sandbox::v1::Sandbox;
-use crate::protos::containerd::task::v2::Task;
-
-pub const GROUP_LABELS: [&str; 2] = [
+const GROUP_LABELS: [&str; 2] = [
     "io.kubernetes.cri.sandbox-id",
     "io.containerd.runc.v2.group",
 ];
@@ -25,17 +20,12 @@ pub fn cri_sandbox_id() -> Option<String> {
     None
 }
 
-pub async fn serve(address: impl AsRef<Path>, server: impl Sandbox + Task) -> Result<ServerHandle> {
-    let address = address.as_ref().display().to_string();
+pub(crate) trait ToLossyString {
+    fn to_lossy_string(&self) -> String;
+}
 
-    #[cfg(unix)]
-    let address = format!("unix://{address}");
-
-    let handle = Server::new()
-        .register(service!(server : Sandbox + Task))
-        .bind(&address)
-        .await
-        .context("Error binding listener")?;
-
-    Ok(handle)
+impl<T: AsRef<OsStr>> ToLossyString for T {
+    fn to_lossy_string(&self) -> String {
+        self.as_ref().to_string_lossy().into_owned()
+    }
 }
