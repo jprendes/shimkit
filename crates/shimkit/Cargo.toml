@@ -12,19 +12,16 @@ homepage.workspace = true
 async-trait = "0.1"
 go-flag = "0.1.0"
 libc = "0.2"
-log = { version = "0.4", features = ["kv_unstable"] }
+log = "0.4"
 oci-spec = "0.7"
-prost = "0.13"
-prost-types = "0.13"
-tokio = { version = "1", features = ["io-std", "process", "fs", "signal"] }
-trapeze = { version = "0.7.1", path = "/home/jprendes/Projects/trapeze/crates/trapeze" }
 anyhow = "1"
 os_str_bytes = "7"
 shimkit-macros.workspace = true
 shimkit-types.workspace = true
-
-[build-dependencies]
-trapeze-codegen = { version = "0.7.0", path = "/home/jprendes/Projects/trapeze/crates/trapeze-codegen" }
+prost.workspace = true
+prost-types.workspace = true
+tokio = { workspace = true, features = ["io-std", "process", "fs", "signal"] }
+trapeze.workspace = true
 
 [dev-dependencies]
 tempfile = "3"

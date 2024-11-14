@@ -18,6 +18,11 @@ homepage = "https://github.com/jprendes/shimkit"
 shimkit = { path = "crates/shimkit", version = "0.1.0" }
 shimkit-types = { path = "crates/shimkit-types", version = "0.1.0" }
 shimkit-macros = { path = "crates/shimkit-macros", version = "0.1.0" }
+trapeze = "0.7.3"
+trapeze-codegen = "0.7.3"
+prost = "0.13"
+prost-types = "0.13"
+tokio = "1"
 
 [profile.release]
 opt-level = 3
