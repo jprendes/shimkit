@@ -4,10 +4,10 @@ use std::time::SystemTime;
 
 use async_trait::async_trait;
 use prost::Name;
-use prost_types::{Any, Timestamp};
 use trapeze::{Client, Result};
 
 use crate::types::events::*;
+use crate::types::prost::{Any, Timestamp};
 
 // Types that can be encoded as `Any` implement the `Name` trait
 pub trait Event: Name {

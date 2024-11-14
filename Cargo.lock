@@ -820,7 +820,6 @@ dependencies = [
  "oci-spec",
  "os_str_bytes",
  "prost",
- "prost-types",
  "shimkit-macros",
  "shimkit-types",
  "tempfile",

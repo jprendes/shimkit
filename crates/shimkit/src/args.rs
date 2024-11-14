@@ -10,7 +10,7 @@ use anyhow::{bail, ensure, Context as _, Result};
 use os_str_bytes::OsStrBytesExt as _;
 use prost::Message;
 use shimkit_types::task::KeyValue;
-use trapeze::{service, Server, ServerHandle};
+use trapeze::{service, Client, Server, ServerHandle};
 
 use crate::event::EventPublisher;
 use crate::fs::dev_null;
@@ -134,6 +134,11 @@ impl Arguments {
                 let mut stdout = self.stdout;
                 writeln!(stdout, "{}", address)?;
 
+                if Client::connect(&address).await.is_ok() {
+                    // a server is already running on that address
+                    return Ok(ServerHandle::new());
+                }
+
                 let handle = Server::new()
                     .register(service!(server : Sandbox + Task))
                     .bind(&address)
@@ -191,7 +196,12 @@ impl Arguments {
 
     pub async fn event_publisher(&self) -> IoResult<EventPublisher> {
         let publisher = match self.action.as_str() {
-            "daemon" => EventPublisher::connect(&self.ttrpc_address).await?,
+            "daemon" => {
+                let address = &self.ttrpc_address;
+                #[cfg(unix)]
+                let address = format!("unix://{address}");
+                EventPublisher::connect(address).await?
+            }
             _ => EventPublisher::null(),
         };
         let publisher = publisher.with_namespace(&self.namespace);
