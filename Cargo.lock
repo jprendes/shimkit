@@ -809,7 +809,7 @@ dependencies = [
 
 [[package]]
 name = "shimkit"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -829,7 +829,7 @@ dependencies = [
 
 [[package]]
 name = "shimkit-macros"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "darling",
  "quote",
@@ -838,7 +838,7 @@ dependencies = [
 
 [[package]]
 name = "shimkit-types"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "prost",
  "prost-types",
