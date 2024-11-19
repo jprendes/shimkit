@@ -8,16 +8,16 @@ members = [
 
 [workspace.package]
 edition = "2021"
-version = "0.2.1"
+version = "0.2.2"
 license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/jprendes/shimkit"
 homepage = "https://github.com/jprendes/shimkit"
 
 [workspace.dependencies]
-shimkit = { path = "crates/shimkit", version = "0.2.1" }
-shimkit-types = { path = "crates/shimkit-types", version = "0.2.1" }
-shimkit-macros = { path = "crates/shimkit-macros", version = "0.2.1" }
+shimkit = { path = "crates/shimkit", version = "0.2.2" }
+shimkit-types = { path = "crates/shimkit-types", version = "0.2.2" }
+shimkit-macros = { path = "crates/shimkit-macros", version = "0.2.2" }
 trapeze = "0.7.4"
 trapeze-codegen = "0.7.4"
 prost = "0.13"
