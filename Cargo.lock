@@ -1003,6 +1003,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-util"
+version = "0.7.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61e7c3654c13bcd040d4a03abee2c75b1d14a37b423cf5a813ceae1cc903ec6a"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-sink",
+ "pin-project-lite",
+ "tokio",
+]
+
+[[package]]
 name = "tokio-vsock"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1017,9 +1030,9 @@ dependencies = [
 
 [[package]]
 name = "trapeze"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5210f73b3b055ada99539fdfb7fb66e5232e67a37b57c5f21b44a2861ce10bde"
+checksum = "2f24c1a212b867c53f743758cb6695ffa822f06aea5c52a798b6bc335c2773e2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1032,6 +1045,7 @@ dependencies = [
  "thiserror 2.0.3",
  "tokio",
  "tokio-stream",
+ "tokio-util",
  "tokio-vsock",
  "trapeze-codegen",
  "trapeze-macros",
@@ -1040,18 +1054,18 @@ dependencies = [
 
 [[package]]
 name = "trapeze-codegen"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f97ee725498491a347ea89cdc3032b7b1033281cc9b4f478b5fc2cbc7584b496"
+checksum = "83cccc51037fee4bafd2e7e197eddab1630f5e8da1752eded65134f0ab3aab9b"
 dependencies = [
  "prost-build",
 ]
 
 [[package]]
 name = "trapeze-macros"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "464d4b88afef6fd5a1f38a9bc28ad3abbedd3331bdb9472a8e7e6458bca6bd0c"
+checksum = "d800f30512d0908770ca854b4f83e99ae29cd3a010c52afc8b9e8401e8413fef"
 dependencies = [
  "anyhow",
  "proc-macro2",
