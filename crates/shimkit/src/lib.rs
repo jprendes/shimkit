@@ -13,3 +13,5 @@ mod fs;
 mod stdio;
 
 pub use shimkit_macros::main;
+
+pub use trapeze;
