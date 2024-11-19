@@ -18,8 +18,8 @@ homepage = "https://github.com/jprendes/shimkit"
 shimkit = { path = "crates/shimkit", version = "0.2.3" }
 shimkit-types = { path = "crates/shimkit-types", version = "0.2.3" }
 shimkit-macros = { path = "crates/shimkit-macros", version = "0.2.3" }
-trapeze = "0.7.4"
-trapeze-codegen = "0.7.4"
+trapeze = "0.7.5"
+trapeze-codegen = "0.7.5"
 prost = "0.13"
 prost-types = "0.13"
 tokio = "1"

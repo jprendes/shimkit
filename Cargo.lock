@@ -1030,9 +1030,9 @@ dependencies = [
 
 [[package]]
 name = "trapeze"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f24c1a212b867c53f743758cb6695ffa822f06aea5c52a798b6bc335c2773e2"
+checksum = "4a2da2a61bcb6db06b2b1e1665a7b7aec6f83e384b544ccf47a039c84b69946f"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1054,18 +1054,18 @@ dependencies = [
 
 [[package]]
 name = "trapeze-codegen"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83cccc51037fee4bafd2e7e197eddab1630f5e8da1752eded65134f0ab3aab9b"
+checksum = "2d6f3bfa2fda8c8f5d417fca8030109f5f1b67e91b020bdc34d61a55dcf158f4"
 dependencies = [
  "prost-build",
 ]
 
 [[package]]
 name = "trapeze-macros"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d800f30512d0908770ca854b4f83e99ae29cd3a010c52afc8b9e8401e8413fef"
+checksum = "b629c7aad077270c530523c46be16dfba42224824b57b539f9e2674d7e937b2c"
 dependencies = [
  "anyhow",
  "proc-macro2",
